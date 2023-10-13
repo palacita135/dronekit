@@ -1,49 +1,60 @@
-# dronekit
+#GIT
+sudo apt-get update
+sudo apt-get install git
 
-DroneKit-Python helps you create powerful apps for UAVs.
+git config --global user.name "USERNAME"
+git config --global user.email "EMAIL"
 
-⚠️ ATTENTION: MAINTAINERS NEEDED ⚠️
-Hey it's true this project is not very active, but it could be with your help. We are looking for maintainers interested in keeping the project alive by keep up with CI and PRs. If you are interested in helping please apply by creating an issue and listing the reasons why you would like to help, in return we will be granting committer access to folks who are truly interested in helping.
+sudo apt-get install python3-dev python3-pip
 
-Overview
-DroneKit-Python (formerly DroneAPI-Python) contains the python language implementation of DroneKit.
+#MAVLProxy(python3)
+sudo apt-get install python3-dev python3-opencv python3-wxgtk4.0 python3-pip python3-matplotlib python3-lxml python3-pygame
+pip3 install PyYAML mavproxy --user
+echo "export PATH=$PATH:$HOME/.local/bin" >> ~/.bashrc
+pip3 install mavproxy --user --upgrade
+pip3 install mavproxy --user git+https://github.com/ArduPilot/mavproxy.git@master
 
-The API allows developers to create Python apps that communicate with vehicles over MAVLink. It provides programmatic access to a connected vehicle's telemetry, state and parameter information, and enables both mission management and direct control over vehicle movement and operations.
+#DRONEKIT
+sudo pip install future pymavlink MAVProxy
+sudo apt install python3-future libtool autoconf
+sudo apt-get update && sudo apt-get dist-upgrade -y
+sudo pip install pymavlink mavproxy dronekit dronekit-sitl
+sudo apt autoremove -y && sudo apt autoclean
 
-The API is primarily intended for use in onboard companion computers (to support advanced use cases including computer vision, path planning, 3D modelling etc). It can also be used for ground station apps, communicating with vehicles over a higher latency RF-link.
+git clone https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+git checkout Copter-4.4.1
+git submodule update --init --recursive
 
-Getting Started
-The Quick Start guide explains how to set up DroneKit on each of the supported platforms (Linux, Mac OSX, Windows) and how to write a script to connect to a vehicle (real or simulated).
+sudo apt install python-matplotlib python-serial python-wxgtk3.0 python-wxtools python-lxml python-scipy python-opencv ccache gawk python-pip python-pexpect
+sudo pip install future pymavlink MAVProxy
 
-A basic script looks like this:
+Tools/environment_install/install-prereqs-ubuntu.sh -y
+. ~/.profile
 
-from dronekit import connect
+Here are some commands to configure waf for commonly used boards:
 
-# Connect to UDP endpoint.
-vehicle = connect('127.0.0.1:14550', wait_ready=True)
-# Use returned Vehicle object to query device state - e.g. to get the mode:
-print("Mode: %s" % vehicle.mode.name)
-Once you've got DroneKit set up, the guide explains how to perform operations like taking off and flying the vehicle. You can also try out most of the tasks by running the examples.
+./waf configure --board bebop --static # Bebop or Bebop2
+./waf configure --board edge           # emlid edge
+./waf configure --board fmuv3          # 3DR Pixhawk 2 boards
+./waf configure --board navio2         # emlid navio2
+./waf configure --board Pixhawk1       # Pixhawk1
+./waf configure --board CubeBlack      # Hex/ProfiCNC Cube Black (formerly known as Pixhawk 2.1)
+./waf configure --board Pixracer       # Pixracer
+./waf configure --board skyviper-v2450 # SkyRocket's SkyViper GPS drone using ChibiOS
+./waf configure --board sitl           # software-in-the-loop simulator
+./waf configure --board sitl --debug   # software-in-the-loop simulator with debug symbols
+List of available vehicle types
 
-Resources
-The project documentation is available at https://readthedocs.org/projects/dronekit-python/. This includes guide, example and API Reference material.
+Here is a list of the most common vehicle build targets:
 
-The example source code is hosted here on Github as sub-folders of /dronekit-python/examples.
+./waf copter                            # All multirotor types
+./waf heli                              # Helicopter types
+./waf plane                             # Fixed wing airplanes including VTOL
+./waf rover                             # Ground-based rovers and surface boats
+./waf sub                               # ROV and other submarines
+./waf antennatracker                    # Antenna trackers
 
-The DroneKit Forums are the best place to ask for technical support on how to use the library. You can also check out our Gitter channel though we prefer posts on the forums where possible.
-
-Documentation: https://dronekit-python.readthedocs.io/en/latest/about/index.html
-Guides: [https://dronekit-python.readthedocs.io/en/latest/guide/index.html)
-API Reference: [https://dronekit-python.readthedocs.io/en/latest/automodule.html)
-Examples: /dronekit-python/examples
-Forums: http://discuss.dronekit.io/
-Gitter: https://gitter.im/dronekit/dronekit-python though we prefer posts on the forums where possible.
-Users and contributors wanted!
-We'd love your feedback and suggestions about this API and are eager to evolve it to meet your needs, please feel free to create an issue to report bugs or feature requests.
-
-If you've created some awesome software that uses this project, let us know on the forums here!
-
-If you want to contribute, see our Contributing guidelines, we welcome all types of contributions but mostly contributions that would help us shrink our issues list.
-
-Licence
-DroneKit-Python is made available under the permissive open source Apache 2.0 License.
+Run Simulator
+cd ~/ardupilot/ArduCopter
+sim_vehicle.py -w
