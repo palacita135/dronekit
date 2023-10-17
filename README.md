@@ -26,7 +26,7 @@ cd ardupilot
 git checkout Copter-4.4.1
 git submodule update --init --recursive
 
-sudo apt install python-matplotlib python-serial python-wxgtk3.0 python-wxtools python-lxml python-scipy python-opencv ccache gawk python-pip python-pexpect
+sudo apt install python3-matplotlib python3-serial python3-wxgtk4.0 python3-wxtools python3-lxml python3-scipy python3-opencv ccache gawk python3-pip python3-pexpect
 sudo pip install future pymavlink MAVProxy
 
 Tools/environment_install/install-prereqs-ubuntu.sh -y
