@@ -1,3 +1,0 @@
-#NAME=latitude,longitude,absolute-altitude,heading
-SUPARLAN=-6.904813,107.478435,654,294.17
-SULAEMAN=-6.980033,107.569613,661,301.60
