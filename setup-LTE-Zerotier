@@ -1,0 +1,277 @@
+To get your Raspberry Pi to communicate via LTE, you'll need an LTE modem or HAT (Hardware Attached on Top) and a SIM card with a data plan. Here’s how to set it up:
+1. Choose an LTE Module
+
+You'll need a compatible LTE modem or HAT. Some popular options include:
+
+    Waveshare SIM7600G-H 4G HAT (supports global LTE bands)
+    Quectel EC25 LTE Module
+    Sixfab 4G/LTE Base HAT (good for IoT projects)
+
+2. Gather Requirements
+
+    Raspberry Pi (any model, but Pi 3B+ and Pi 4 are best)
+    LTE HAT/USB dongle
+    Micro SIM card with a data plan
+    External LTE antenna (if needed)
+    Power supply (some LTE modules need extra power)
+
+3. Connect the LTE Module
+
+There are two ways to connect:
+A. USB LTE Modem (Plug & Play)
+
+    Insert the SIM card into the modem.
+    Connect it to the Raspberry Pi via USB.
+    The modem should be recognized as a network interface.
+
+B. LTE HAT (GPIO/UART)
+
+    Attach the HAT to the Raspberry Pi.
+    Connect an external LTE antenna (if required).
+    Insert the SIM card.
+    Provide power (some modules need extra power via USB).
+
+4. Install Required Packages
+
+Open a terminal and install dependencies:
+
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install ppp usb-modeswitch minicom -y
+
+5. Check if Modem is Detected
+
+Run:
+
+    lsusb
+
+You should see something like:
+
+    Bus 001 Device 004: ID 12d1:1506 Huawei Technologies Co., Ltd.
+
+For HATs, check serial devices:
+
+    ls /dev/ttyUSB*
+
+or
+
+    dmesg | grep ttyUSB
+
+6. Configure PPP for Cellular Data (If Needed)
+
+If your LTE modem doesn't work as an automatic network interface, set up PPP:
+
+    Create a new PPP config:
+
+    sudo nano /etc/ppp/peers/provider
+
+Add:
+
+    /dev/ttyUSB3
+    115200
+    connect 'chat -v -f /etc/chatscripts/gprs'
+    defaultroute
+    usepeerdns
+    persist
+    noauth
+
+    Edit the chat script:
+
+    sudo nano /etc/chatscripts/gprs
+
+Modify:
+
+    ABORT 'NO CARRIER'
+    ABORT 'ERROR'
+    '' ATZ
+    OK AT+CGDCONT=1,"IP","your_apn_here"
+    OK ATD*99#
+    CONNECT ''
+
+Replace your_apn_here with your carrier’s APN.
+
+    Connect:
+
+    sudo pon
+
+7. Enable LTE as a Network Interface (For USB Modems)
+
+    Check network interfaces:
+
+    ip a
+
+    If LTE is recognized as a wwan0 or usb0 interface, set up DHCP:
+
+    sudo dhclient wwan0
+
+    Test the connection:
+
+    ping -c 5 8.8.8.8
+
+8. Enable Auto-Connection on Boot
+
+For USB LTE modems, add this to /etc/network/interfaces:
+
+    auto wwan0
+    iface wwan0 inet dhcp
+
+For PPP:
+
+    sudo systemctl enable pppd-dialup
+
+9. Debugging Tips
+
+    Check if modem is detected: lsusb
+    Check network status: ifconfig
+    Check connection logs: sudo cat /var/log/syslog | grep pppd
+    Restart modem: sudo systemctl restart networking
+
+Now your Raspberry Pi should be online via LTE! Need help troubleshooting?
+You said:
+integrated with zerotier for drone telemetry
+ChatGPT said:
+Raspberry Pi + LTE + ZeroTier for Drone Telemetry
+
+You want to use ZeroTier over LTE on a Raspberry Pi to create a secure, low-latency telemetry network for your drone. This setup allows your Raspberry Pi (likely running ArduPilot or PX4) to send MAVLink telemetry over ZeroTier, giving you remote access to your drone from anywhere.
+1. Prerequisites
+Hardware:
+
+    Raspberry Pi (3B, 4, or CM4 recommended)
+    LTE Modem (USB Dongle or HAT like SIM7600, Quectel EC25, or Sixfab LTE Base HAT)
+    Drone Flight Controller (Pixhawk, Cube, etc.)
+    MAVLink-capable software (ArduPilot, PX4)
+    Ground Control Station (QGroundControl, Mission Planner, MAVProxy, etc.)
+
+Software:
+
+    Raspberry Pi OS (or Ubuntu)
+    ppp for LTE (if needed)
+    ZeroTier for encrypted networking
+    MAVProxy (optional, for routing MAVLink telemetry)
+
+2. Set Up LTE on Raspberry Pi
+
+Follow the LTE setup instructions from my previous message. The key is ensuring the LTE connection is working properly.
+
+To check connectivity:
+
+    ping -c 5 8.8.8.8
+
+If successful, continue to ZeroTier setup.
+3. Install ZeroTier on Raspberry Pi
+
+ZeroTier creates a secure virtual LAN over the internet.
+Install ZeroTier
+
+    curl -s https://install.zerotier.com | sudo bash
+
+Join Your ZeroTier Network
+
+    Create a ZeroTier account at my.zerotier.com
+    Create a new network and copy the Network ID
+    On Raspberry Pi, join the network:
+
+    sudo zerotier-cli join <NETWORK_ID>
+
+Authorize the device in the ZeroTier web dashboard under "Members".
+Check connection status:
+
+    sudo zerotier-cli listpeers
+
+4. Configure Telemetry Streaming Over ZeroTier
+
+Your Pixhawk (ArduPilot/PX4) sends telemetry via UART (e.g., /dev/serial0 or /dev/ttyUSB0).
+We will use MAVProxy to route this telemetry over ZeroTier.
+Install MAVProxy
+
+    pip install MAVProxy
+
+Start MAVProxy with ZeroTier
+
+Run:
+
+    mavproxy.py --master=/dev/serial0 --baudrate 57600 --out udp:<GROUND_STATION_ZEROTIER_IP>:14550
+
+Replace <GROUND_STATION_ZEROTIER_IP> with the IP address of your Mission Planner/QGroundControl PC inside the ZeroTier network.
+Automatically Start MAVProxy on Boot
+
+    Create a systemd service:
+
+    sudo nano /etc/systemd/system/mavproxy.service
+
+Add the following:
+
+    [Unit]
+    Description=MAVProxy Drone Telemetry Service
+    After=network.target
+
+    [Service]
+    ExecStart=/usr/local/bin/mavproxy.py --master=/dev/serial0 --baudrate 57600 --out udp:<GROUND_STATION_ZEROTIER_IP>:14550
+    Restart=always
+    User=pi
+
+    [Install]
+    WantedBy=multi-user.target
+
+Enable and start the service:
+
+    sudo systemctl enable mavproxy
+    sudo systemctl start mavproxy
+
+5. Connect to Telemetry from Your Ground Station
+
+On your laptop (or PC running QGroundControl / Mission Planner):
+
+    Ensure it's connected to ZeroTier.
+    Open Mission Planner or QGroundControl.
+    Add a UDP connection on port 14550.
+    If everything is set up, you should start receiving live telemetry.
+
+6. Optional: Remote SSH & Video Streaming
+Remote SSH Over ZeroTier
+
+Find the Raspberry Pi's ZeroTier IP:
+
+    zerotier-cli listpeers
+
+Then SSH into the Pi:
+
+    ssh pi@<ZEROTIER_PI_IP>
+
+Live FPV Video Over ZeroTier
+
+If your Raspberry Pi has a camera, you can stream video using GStreamer:
+
+    gst-launch-1.0 raspivid -t 0 -w 640 -h 480 -fps 30 -b 2000000 -o - | gst-launch-1.0 fdsrc ! h264parse ! rtph264pay config-interval=1 pt=96 ! udpsink host=<GROUND_STATION_ZEROTIER_IP> port=5600
+
+On the ground station, open the stream:
+
+    gst-launch-1.0 udpsrc port=5600 caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264" ! rtph264depay ! decodebin ! autovideosink
+
+7. Troubleshooting
+LTE Connection Issues
+
+    Check modem detection: lsusb
+    Check connection: ifconfig wwan0
+    Restart LTE:
+
+    sudo systemctl restart networking
+
+ZeroTier Issues
+
+    Check if ZeroTier is running:
+
+    sudo zerotier-cli status
+
+    Ensure ZeroTier ports 9993 are open in your firewall.
+
+MAVLink Not Connecting
+
+    Ensure correct serial port:
+
+    ls /dev/serial*
+
+    Try different baud rates (57600, 115200).
+
+Conclusion
+
+This setup allows your Raspberry Pi to act as a bridge between LTE and ZeroTier, securely transmitting telemetry and video from your drone. You can now control your drone remotely from anywhere with low latency using ZeroTier’s encrypted VPN.
